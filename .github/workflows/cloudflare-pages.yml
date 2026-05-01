@@ -1,0 +1,66 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        
+    - name: Get Flutter dependencies
+      run: flutter pub get
+
+    - name: Build Flutter web
+      run: flutter build web --base-href / --release --no-web-resources-cdn
+
+    - name: Create dist directory
+      run: |
+        mkdir -p dist
+        cp -r build/web/* dist/
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: flutter-build
+        path: dist/
+
+    - name: Deploy to Cloudflare Pages
+      if: github.ref == 'refs/heads/main'
+      uses: cloudflare/pages-action@v1
+      with:
+        apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+        projectName: hyu-yangji
+        directory: dist
+        branch: main
+        wranglerVersion: '3'
+
+    - name: Deploy Preview to Cloudflare Pages
+      if: github.ref != 'refs/heads/main'
+      uses: cloudflare/pages-action@v1
+      with:
+        apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+        projectName: hyu-yangji
+        directory: dist
+        branch: develop
+        wranglerVersion: '3'
