@@ -53,7 +53,7 @@ class HomePage extends StatelessWidget {
               'Cloudflare Pages 배포 테스트',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[600],
+                color: Colors.grey, // [600] 제거
               ),
             ),
           ],
