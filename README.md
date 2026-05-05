@@ -64,3 +64,4 @@ npm run dev
 ## 📄 라이선스
 
 MIT License# Cloudflare Pages 배포 준비 완료
+## 배포 상태 확인
