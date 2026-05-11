@@ -1,134 +1,160 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const compression = require('compression');
-const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const logger = require('./utils/logger');
+const cron = require('node-cron');
+const winston = require('winston');
 
-// 라우터
-const placesRouter = require('./routes/places');
-const categoriesRouter = require('./routes/categories');
-const coursesRouter = require('./routes/courses');
+// 라우트 임포트
+const placeRoutes = require('./routes/places');
+const adminRoutes = require('./routes/admin');
+const syncRoutes = require('./routes/sync');
 
-// 미들웨어
-const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
-const { requestLogger, performanceLogger, cacheLogger } = require('./middleware/requestLogger');
-
-// 유틸리티
-const { connectDatabase } = require('./config/database');
-const { connectRedis, closeRedis } = require('./config/redis');
+// 미들웨어 임포트
+const errorHandler = require('./middleware/errorHandler');
+const requestLogger = require('./middleware/requestLogger');
 
 // 환경 변수 로드
 dotenv.config();
 
-// Express 앱 생성
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3003;
 
-// 보안 미들웨어
-app.use(helmet());
-app.use(compression());
-
-// CORS 설정
-const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'https://hyu-yangji.pages.dev',
-    'https://*.pages.dev'
-  ],
-  credentials: true
-};
-app.use(cors(corsOptions));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15분
-  max: 100, // IP당 최대 100 요청
-  message: {
-    error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.'
-  }
+// 로거 설정
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+    new winston.transports.Console({
+      format: winston.format.simple()
+    })
+  ]
 });
-app.use('/api', limiter);
 
-// Body 파싱
+// 미들웨어 설정
+app.use(helmet());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:8002',
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// 로깅 미들웨어
+app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
-app.use(performanceLogger);
 
-// 정적 파일 제공 (이미지 등)
-app.use('/static', express.static('public'));
-
-// Health check
+// 기본 라우트
 app.get('/health', (req, res) => {
   res.json({
-    status: 'ok',
+    status: 'healthy',
     timestamp: new Date().toISOString(),
-    service: 'hyu-yangji-api',
     version: '1.0.0'
   });
 });
 
 // API 라우트
-app.use('/api/places', placesRouter);
-app.use('/api/categories', categoriesRouter);
-app.use('/api/courses', coursesRouter);
+app.use('/api/places', placeRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/sync', syncRoutes);
+app.use('/api/scheduler', require('./routes/scheduler'));
 
-// 기본 라우트
-app.get('/', (req, res) => {
-  res.json({
-    message: 'HYU양지 API 서버',
-    version: '1.0.0',
-    endpoints: [
-      'GET /health - 헬스 체크',
-      'GET /api/places - 장소 목록',
-      'GET /api/categories - 카테고리 목록',
-      'POST /api/courses/recommend - 코스 추천'
-    ]
+// 404 핸들러
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'API endpoint not found',
+    path: req.path
   });
 });
 
 // 에러 핸들러
-app.use(notFoundHandler);
 app.use(errorHandler);
 
-// 서버 시작
-async function startServer() {
+// MongoDB 연결
+const connectDB = async () => {
   try {
-    // 데이터베이스 연결
-    await connectDatabase();
-    logger.info('Database connected successfully');
-
-    // Redis 연결
-    await connectRedis();
-    logger.info('Redis connected successfully');
-
-    // 서버 시작
-    app.listen(PORT, () => {
-      logger.info(`Server is running on port ${PORT}`);
-      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/hyu_yangji', {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      family: 4  // IPv4 강제
     });
-
+    
+    logger.info(`MongoDB Connected: ${conn.connection.host}`);
+    
+    // 연결 성공 이벤트
+    mongoose.connection.on('connected', () => {
+      logger.info('MongoDB connection established');
+    });
+    
+    // 연결 에러 이벤트
+    mongoose.connection.on('error', (err) => {
+      logger.error('MongoDB connection error:', err);
+    });
+    
+    // 연결 종료 이벤트
+    mongoose.connection.on('disconnected', () => {
+      logger.warn('MongoDB connection disconnected');
+    });
+    
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    logger.error('MongoDB connection failed:', error);
     process.exit(1);
   }
-}
+};
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  await closeRedis();
-  process.exit(0);
+// 자동 동기화 스케줄러 (매일 오전 3시)
+cron.schedule('0 3 * * *', () => {
+  logger.info('Starting scheduled data synchronization...');
+  // TODO: API 동기화 로직 추가
+}, {
+  scheduled: true,
+  timezone: "Asia/Seoul"
 });
 
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  await closeRedis();
-  process.exit(0);
+// 서버 시작
+const startServer = async () => {
+  await connectDB();
+  
+  app.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:8002'}`);
+  });
+};
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received. Shutting down gracefully');
+  mongoose.connection.close(() => {
+    logger.info('MongoDB connection closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  logger.info('SIGINT received. Shutting down gracefully');
+  mongoose.connection.close(() => {
+    logger.info('MongoDB connection closed');
+    process.exit(0);
+  });
+});
+
+// 에러 핸들링
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
 });
 
 // 서버 시작

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>디버그 테스트</title>
+</head>
+<body>
+    <h1>디버그 테스트</h1>
+    <div id="places-grid"></div>
+    
+    <script>
+        console.log('디버그 스크립트 시작');
+        
+        // 기본 데이터
+        const placesData = [
+            {
+                id: 1,
+                name: '스타벅스 한양대점',
+                category: 'cafe',
+                rating: 4.5,
+                quality_score: 92,
+                address: '서울특별시 성동구 한양대학교길 25',
+                description: '한양대학교 내에 위치한 대표적인 카페',
+                image: 'https://picsum.photos/seed/hyu-cafe1/400/300.jpg',
+                tags: ['와이파이', '공부하기좋음', '24시간']
+            }
+        ];
+        
+        // 기본 함수
+        function findById(id) {
+            return document.getElementById(id);
+        }
+        
+        // 장소 렌더링
+        function renderPlaces() {
+            console.log('renderPlaces 호출됨');
+            const container = findById('places-grid');
+            if (container) {
+                container.innerHTML = '<p>테스트 성공!</p>';
+                console.log('장소 렌더링 성공');
+            } else {
+                console.log('장소 그리드를 찾을 수 없음');
+            }
+        }
+        
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded 이벤트 발생');
+            renderPlaces();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # API 서버
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: hyu-yangji-api
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - FRONTEND_URL=https://hyu-yangji.churchhub.co.kr
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./api/logs:/app/logs
+      - ./api/uploads:/app/uploads
+      - ./api/.env:/app/.env:ro
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    networks:
+      - hyu-yangji-network
+
+  # 웹 서버 (Nginx)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web-flutter
+    container_name: hyu-yangji-web
+    ports:
+      - "8002:80"
+    volumes:
+      - ./build/web:/usr/share/nginx/html:ro
+    restart: unless-stopped
+    networks:
+      - hyu-yangji-network
+
+  # MongoDB 데이터베이스
+  mongodb:
+    image: mongo:7.0
+    container_name: hyu-yangji-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+    volumes:
+      - mongodb_data:/data/db
+      - ./api/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    restart: unless-stopped
+    networks:
+      - hyu-yangji-network
+
+  # Redis (캐시 및 세션)
+  redis:
+    image: redis:7-alpine
+    container_name: hyu-yangji-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - hyu-yangji-network
+
+# 네트워크
+networks:
+  hyu-yangji-network:
+    driver: bridge
+
+# 볼륨
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+

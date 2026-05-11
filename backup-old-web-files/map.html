@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지도 - HYU양지:GO</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --primary-color: #764ba2;
+            --secondary-color: #667eea;
+        }
+        
+        #map {
+            height: 100vh;
+            width: 100%;
+            position: relative;
+        }
+        
+        .map-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 350px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        
+        .map-search {
+            margin-bottom: 20px;
+        }
+        
+        .map-search input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 25px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .map-search input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+        
+        .category-filters {
+            margin-bottom: 20px;
+        }
+        
+        .filter-chip {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            background: #f3f4f6;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .filter-chip:hover {
+            background: var(--secondary-color);
+            color: white;
+        }
+        
+        .filter-chip.active {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+        }
+        
+        .place-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .place-item {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .place-item:hover {
+            background: #f9fafb;
+            padding-left: 20px;
+        }
+        
+        .place-item:last-child {
+            border-bottom: none;
+        }
+        
+        .place-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .place-category {
+            display: inline-block;
+            padding: 3px 10px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            margin-bottom: 5px;
+        }
+        
+        .place-address {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        .map-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .map-control-btn {
+            background: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .map-control-btn:hover {
+            background: var(--secondary-color);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .back-button:hover {
+            background: var(--secondary-color);
+            color: white;
+        }
+        
+        .quality-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            font-weight: bold;
+            border: 3px solid white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        
+        .quality-excellent {
+            background: #22c55e;
+        }
+        
+        .quality-good {
+            background: #3b82f6;
+        }
+        
+        .quality-medium {
+            background: #f59e0b;
+        }
+        
+        .loading-map {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 지도 컨테이너 -->
+    <div id="map"></div>
+    
+    <!-- 뒤로가기 버튼 -->
+    <a href="/" class="back-button">
+        <i class="fas fa-arrow-left"></i>
+        <span>메인으로</span>
+    </a>
+    
+    <!-- 지도 오버레이 패널 -->
+    <div class="map-overlay">
+        <h3 class="text-xl font-bold mb-4">
+            <i class="fas fa-map-marked-alt mr-2"></i>
+            양지 캠퍼스 지도
+        </h3>
+        
+        <!-- 검색 -->
+        <div class="map-search">
+            <input type="text" id="search-input" placeholder="장소명으로 검색...">
+        </div>
+        
+        <!-- 카테고리 필터 -->
+        <div class="category-filters">
+            <h4 class="font-semibold mb-2">카테고리</h4>
+            <div>
+                <span class="filter-chip active" data-category="all">전체</span>
+                <span class="filter-chip" data-category="cafe">카페</span>
+                <span class="filter-chip" data-category="restaurant">식당</span>
+                <span class="filter-chip" data-category="culture">문화시설</span>
+                <span class="filter-chip" data-category="shopping">쇼핑</span>
+            </div>
+        </div>
+        
+        <!-- 장소 목록 -->
+        <div class="place-list" id="place-list">
+            <!-- 장소 목록이 여기에 동적으로 로드됩니다 -->
+        </div>
+        
+        <!-- 통계 -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+            <div class="flex justify-between text-sm">
+                <span>총 장소:</span>
+                <span class="font-bold" id="total-count">-</span>
+            </div>
+            <div class="flex justify-between text-sm mt-1">
+                <span>품질 점수:</span>
+                <span class="font-bold text-purple-600" id="avg-quality">-</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 지도 컨트롤 -->
+    <div class="map-controls">
+        <button class="map-control-btn" onclick="currentLocation()" title="현재 위치">
+            <i class="fas fa-crosshairs"></i>
+        </button>
+        <button class="map-control-btn" onclick="toggleHeatmap()" title="인기도 히트맵">
+            <i class="fas fa-fire"></i>
+        </button>
+        <button class="map-control-btn" onclick="resetView()" title="초기 위치">
+            <i class="fas fa-home"></i>
+        </button>
+    </div>
+    
+    <!-- 로딩 표시 -->
+    <div class="loading-map" id="loading-map" style="display: none;">
+        <div class="spinner"></div>
+        <p>지도와 장소 정보를 불러오는 중입니다...</p>
+    </div>
+    
+    <script>
+        // 지도 초기화
+        let map;
+        let markers = [];
+        let places = [];
+        let currentCategory = 'all';
+        
+        // 홍익대학교 양지 캠퍼스 중심 좌표
+        const HONGIK_UNIV = [37.5513, 126.9269];
+        
+        function initMap() {
+            // 지도 생성
+            map = L.map('map').setView(HONGIK_UNIV, 15);
+            
+            // 타일 레이어 (OpenStreetMap)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // 홍익대학교 마커
+            L.marker(HONGIK_UNIV)
+                .addTo(map)
+                .bindPopup('<b>홍익대학교 양지 캠퍼스</b>')
+                .openPopup();
+            
+            // 장소 데이터 로드
+            loadPlaces();
+        }
+        
+        // 장소 데이터 로드
+        async function loadPlaces() {
+            try {
+                showLoading(true);
+                
+                // 실제 API 대신 테스트 데이터
+                places = [
+                    {
+                        id: 1,
+                        name: "스타벅스 홍익대점",
+                        category: "cafe",
+                        address: "서울특별시 마포구 홍익대학교길 25",
+                        coordinates: [37.5523, 126.9259],
+                        quality_score: 0.92,
+                        description: "캠퍼스 내 대표 카페"
+                    },
+                    {
+                        id: 2,
+                        name: "홍대 학생회관 식당",
+                        category: "restaurant",
+                        address: "서울특별시 마포구 홍익대학교길 1",
+                        coordinates: [37.5518, 126.9264],
+                        quality_score: 0.88,
+                        description: "학생들을 위한 식당"
+                    },
+                    {
+                        id: 3,
+                        name: "홍익대학교 미술관",
+                        category: "culture",
+                        address: "서울특별시 마포구 홍익대학교길 94",
+                        coordinates: [37.5508, 126.9289],
+                        quality_score: 0.95,
+                        description: "대한민국 대표 미술관"
+                    },
+                    {
+                        id: 4,
+                        name: "교보문고 홍대점",
+                        category: "shopping",
+                        address: "서울특별시 마포구 양화로 156",
+                        coordinates: [37.5533, 126.9249],
+                        quality_score: 0.91,
+                        description: "대형 서점"
+                    },
+                    {
+                        id: 5,
+                        name: "이디야 커피 홍대점",
+                        category: "cafe",
+                        address: "서울특별시 마포구 홍익대학교길 15",
+                        coordinates: [37.5528, 126.9274],
+                        quality_score: 0.87,
+                        description: "저렴한 커피"
+                    }
+                ];
+                
+                // 마커 추가
+                addMarkers();
+                
+                // 장소 목록 업데이트
+                updatePlaceList();
+                
+                // 통계 업데이트
+                updateStats();
+                
+                showLoading(false);
+                
+            } catch (error) {
+                console.error('Failed to load places:', error);
+                showLoading(false);
+            }
+        }
+        
+        // 마커 추가
+        function addMarkers() {
+            // 기존 마커 제거
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            // 필터링된 장소에 마커 추가
+            const filteredPlaces = currentCategory === 'all' 
+                ? places 
+                : places.filter(p => p.category === currentCategory);
+            
+            filteredPlaces.forEach(place => {
+                const qualityClass = getQualityClass(place.quality_score);
+                const qualityText = Math.round(place.quality_score * 100);
+                
+                // 커스텀 마커 생성
+                const marker = L.divIcon({
+                    className: 'quality-marker ' + qualityClass,
+                    html: qualityText,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
+                });
+                
+                const placeMarker = L.marker(place.coordinates, { icon: marker })
+                    .addTo(map)
+                    .bindPopup(`
+                        <div>
+                            <h4>${place.name}</h4>
+                            <p><i class="fas fa-map-marker-alt"></i> ${place.address}</p>
+                            <p><i class="fas fa-star"></i> 품질 점수: ${qualityText}점</p>
+                            <p><small>${place.description}</small></p>
+                        </div>
+                    `);
+                
+                markers.push(placeMarker);
+            });
+        }
+        
+        // 품질 클래스 결정
+        function getQualityClass(score) {
+            if (score >= 0.9) return 'quality-excellent';
+            if (score >= 0.8) return 'quality-good';
+            return 'quality-medium';
+        }
+        
+        // 장소 목록 업데이트
+        function updatePlaceList() {
+            const listContainer = document.getElementById('place-list');
+            listContainer.innerHTML = '';
+            
+            const filteredPlaces = currentCategory === 'all' 
+                ? places 
+                : places.filter(p => p.category === currentCategory);
+            
+            filteredPlaces.forEach(place => {
+                const placeItem = document.createElement('div');
+                placeItem.className = 'place-item';
+                placeItem.onclick = () => focusOnPlace(place);
+                
+                const qualityText = Math.round(place.quality_score * 100);
+                
+                placeItem.innerHTML = `
+                    <div class="place-name">${place.name}</div>
+                    <div class="place-category">${getCategoryName(place.category)}</div>
+                    <div class="place-address">
+                        <i class="fas fa-map-marker-alt mr-1"></i>
+                        ${place.address}
+                    </div>
+                `;
+                
+                listContainer.appendChild(placeItem);
+            });
+        }
+        
+        // 장소에 포커스
+        function focusOnPlace(place) {
+            map.setView(place.coordinates, 17);
+            
+            // 해당 마커 찾기
+            const markerIndex = places.findIndex(p => p.id === place.id);
+            if (markerIndex !== -1) {
+                markers[markerIndex].openPopup();
+            }
+        }
+        
+        // 통계 업데이트
+        function updateStats() {
+            const totalCount = places.length;
+            const avgQuality = places.reduce((sum, place) => sum + place.quality_score, 0) / totalCount;
+            
+            document.getElementById('total-count').textContent = totalCount;
+            document.getElementById('avg-quality').textContent = 
+                Math.round(avgQuality * 100) + '%';
+        }
+        
+        // 카테고리 필터링
+        function filterByCategory(category) {
+            currentCategory = category;
+            
+            // 필터 칩 활성화 상태 업데이트
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            document.querySelector(`[data-category="${category}"]`).classList.add('active');
+            
+            // 마커와 목록 업데이트
+            addMarkers();
+            updatePlaceList();
+        }
+        
+        // 검색 기능
+        function searchPlaces(query) {
+            const filteredPlaces = places.filter(place => 
+                place.name.toLowerCase().includes(query.toLowerCase()) ||
+                place.address.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            // 장소 목록 업데이트
+            const listContainer = document.getElementById('place-list');
+            listContainer.innerHTML = '';
+            
+            filteredPlaces.forEach(place => {
+                const placeItem = document.createElement('div');
+                placeItem.className = 'place-item';
+                placeItem.onclick = () => focusOnPlace(place);
+                
+                const qualityText = Math.round(place.quality_score * 100);
+                
+                placeItem.innerHTML = `
+                    <div class="place-name">${place.name}</div>
+                    <div class="place-category">${getCategoryName(place.category)}</div>
+                    <div class="place-address">
+                        <i class="fas fa-map-marker-alt mr-1"></i>
+                        ${place.address}
+                    </div>
+                `;
+                
+                listContainer.appendChild(placeItem);
+            });
+            
+            // 지도에서 검색된 장소만 표시
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            filteredPlaces.forEach(place => {
+                const qualityClass = getQualityClass(place.quality_score);
+                const qualityText = Math.round(place.quality_score * 100);
+                
+                const marker = L.divIcon({
+                    className: 'quality-marker ' + qualityClass,
+                    html: qualityText,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
+                });
+                
+                const placeMarker = L.marker(place.coordinates, { icon: marker })
+                    .addTo(map)
+                    .bindPopup(`
+                        <div>
+                            <h4>${place.name}</h4>
+                            <p><i class="fas fa-map-marker-alt"></i> ${place.address}</p>
+                            <p><i class="fas fa-star"></i> 품질 점수: ${qualityText}점</p>
+                        </div>
+                    `);
+                
+                markers.push(placeMarker);
+            });
+        }
+        
+        // 카테고리 이름 변환
+        function getCategoryName(category) {
+            const names = {
+                'cafe': '카페',
+                'restaurant': '식당',
+                'culture': '문화시설',
+                'shopping': '쇼핑'
+            };
+            return names[category] || category;
+        }
+        
+        // 현재 위치
+        function currentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    map.setView([lat, lng], 16);
+                    
+                    L.marker([lat, lng])
+                        .addTo(map)
+                        .bindPopup('현재 위치')
+                        .openPopup();
+                });
+            } else {
+                alert('현재 위치를 지원하지 않는 브라우저입니다.');
+            }
+        }
+        
+        // 히트맵 토글 (기능은 나중에 구현)
+        function toggleHeatmap() {
+            alert('인기도 히트맵 기능은 준비 중입니다.');
+        }
+        
+        // 초기 뷰로 복귀
+        function resetView() {
+            map.setView(HONGIK_UNIV, 15);
+        }
+        
+        // 로딩 표시
+        function showLoading(show) {
+            document.getElementById('loading-map').style.display = show ? 'block' : 'none';
+        }
+        
+        // 이벤트 리스너 등록
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            
+            // 카테고리 필터 이벤트
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    filterByCategory(this.dataset.category);
+                });
+            });
+            
+            // 검색 이벤트
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', function() {
+                const query = this.value.trim();
+                if (query.length > 0) {
+                    searchPlaces(query);
+                } else {
+                    updatePlaceList();
+                    addMarkers();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

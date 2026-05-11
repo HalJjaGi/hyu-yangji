@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>모바일 테스트 - HYU양지:GO</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            color: #333;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .qr-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            background: #667eea;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.4;
+        }
+        .steps {
+            text-align: left;
+            margin: 30px 0;
+        }
+        .steps h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        .steps ol {
+            padding-left: 20px;
+        }
+        .steps li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .test-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .test-button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4fd;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌿 HYU양지:GO</h1>
+        <p><strong>모바일 지도 테스트 페이지</strong></p>
+        
+        <div class="qr-container">
+            <div class="qr-code">
+                QR 코드 대신<br>
+                아래 링크를<br>
+                직접 접속해주세요
+            </div>
+        </div>
+        
+        <div class="steps">
+            <h3>📱 접속 방법</h3>
+            <ol>
+                <li>아래 링크를 복사하세요</li>
+                <li>모바일 브라우저를 열고 주소창에 붙여넣기</li>
+                <li>지도가 보이는지 확인</li>
+            </ol>
+        </div>
+        
+        <div style="background: #f0f0f0; padding: 15px; border-radius: 8px; word-break: break-all; font-size: 14px;">
+            <strong>🔗 테스트 URL:</strong><br>
+            <span id="url">http://172.30.1.55:8003</span>
+            <button onclick="copyUrl()" style="margin-top: 10px; padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">복사</button>
+        </div>
+        
+        <button class="test-button" onclick="testMap()">
+            🗺️ 지도 테스트 시작
+        </button>
+        
+        <div class="status">
+            <strong>💡 팁:</strong><br>
+            만약 위 링크가 안되면, <br>
+            컴퓨터와 같은 WiFi에 연결되어 있는지 확인해주세요.
+        </div>
+    </div>
+    
+    <script>
+        function copyUrl() {
+            const url = document.getElementById('url').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('URL이 복사되었습니다!');
+            });
+        }
+        
+        function testMap() {
+            // 사용자 에이전트 확인
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isMobile = /mobile|android|iphone|ipad|ipod/i.test(userAgent);
+            
+            if (isMobile) {
+                // 모바일이면 바로 이동
+                window.location.href = document.getElementById('url').textContent;
+            } else {
+                alert('모바일에서 접속해주세요!');
+            }
+        }
+        
+        // 페이지 로드 시 자동으로 IP 표시
+        window.onload = function() {
+            // 실제 서비스에서는 동적 IP 처리가 필요
+            console.log('테스트 페이지 로드됨');
+        };
+    </script>
+</body>
+</html>

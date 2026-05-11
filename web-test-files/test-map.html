@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지도 테스트 - HYU양지:GO</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        .info { position: absolute; top: 10px; left: 10px; z-index: 1000; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h3>🌿 지도 테스트</h3>
+        <p>이 지도가 보이면 위치 문제입니다</p>
+        <p>안 보이면 브라우저/네트워크 문제입니다</p>
+        <button onclick="testMarkers()">마커 테스트</button>
+    </div>
+    <div id="map"></div>
+    
+    <script>
+        // 한양대 주변 좌표
+        const hyuLocation = [37.5558, 127.0476];
+        
+        // 지도 초기화
+        const map = L.map('map').setView(hyuLocation, 15);
+        
+        // OpenStreetMap 타일 레이어
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // 마커 추가
+        const marker = L.marker(hyuLocation).addTo(map)
+            .bindPopup('한양대')
+            .openPopup();
+        
+        // 테스트 함수
+        function testMarkers() {
+            // 성수동 주변 장소들
+            const places = [
+                [37.5445, 127.0554, '성수동 갤러리'],
+                [37.5432, 127.0543, '분식집'],
+                [37.5456, 127.0567, '커피숍']
+            ];
+            
+            places.forEach(([lat, lng, name]) => {
+                L.marker([lat, lng]).addTo(map)
+                    .bindPopup(name);
+            });
+            
+            alert('테스트 마커가 추가되었습니다!');
+        }
+        
+        // 지도 로드 완료
+        console.log('✅ 지도 로드 성공!');
+    </script>
+</body>
+</html>

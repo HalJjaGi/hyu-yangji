@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYU양지:GO - 한양대학교 서울 캠퍼스 최적 장소 추천 서비스</title>
+    <meta name="description" content="한양대학교 서울 캠퍼스 주변의 최고 장소를 AI로 추천합니다. 카페, 식당, 문화시설 등 모든 정보를 실시간으로 제공합니다.">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #764ba2;
+            --secondary-color: #667eea;
+            --accent-color: #f093fb;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background: #f8f9fa;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 80px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-30px, -30px) rotate(180deg); }
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .search-box {
+            background: white;
+            border-radius: 50px;
+            padding: 5px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .search-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .search-input {
+            border: none;
+            outline: none;
+            flex: 1;
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+        }
+        
+        .search-button {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .search-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .category-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .category-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stats-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 0;
+            margin-top: 80px;
+            position: relative;
+        }
+        
+        .stats-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .stats-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .quality-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+        }
+        
+        .quality-good {
+            color: #4ade80;
+        }
+        
+        .quality-medium {
+            color: #fbbf24;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .place-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .place-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .place-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+        
+        .place-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .place-category {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        .place-info {
+            color: #64748b;
+            margin-bottom: 15px;
+        }
+        
+        .place-quality {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .quality-score {
+            background: #e0e7ff;
+            color: var(--primary-color);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .floating-action {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .floating-action:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #f3f4f6;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .close-modal:hover {
+            background: #e5e7eb;
+            transform: rotate(90deg);
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container mx-auto px-4">
+            <div class="hero-content text-center">
+                <h1 class="text-5xl md:text-6xl font-bold mb-6">
+                    HYU양지:GO
+                </h1>
+                <p class="text-xl md:text-2xl mb-8 opacity-90">
+                    한양대학교 서울 캠퍼스 주변<br>
+                    <strong>최고의 장소를 AI로 추천합니다</strong>
+                </p>
+                
+                <!-- Search Box -->
+                <div class="search-box max-w-2xl mx-auto mb-8">
+                    <input type="text" class="search-input" placeholder="찾고 싶은 장소를 검색해보세요...">
+                    <button class="search-button">
+                        <i class="fas fa-search"></i>
+                        <span>검색</span>
+                    </button>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="flex justify-center gap-6 mb-8">
+                    <div class="quality-indicator">
+                        <i class="fas fa-shield-alt quality-good"></i>
+                        <span>데이터 품질: 87점</span>
+                    </div>
+                    <div class="quality-indicator">
+                        <i class="fas fa-database"></i>
+                        <span>장소 수: 125개</span>
+                    </div>
+                    <div class="quality-indicator">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>실시간 업데이트</span>
+                    </div>
+                </div>
+                
+                <!-- Real-time Search -->
+                <div id="search-results" class="max-w-2xl mx-auto mb-8" style="display: none;">
+                    <div class="bg-white rounded-2xl p-6 shadow-2xl">
+                        <h4 class="text-lg font-bold mb-4">검색 결과</h4>
+                        <div id="search-results-container">
+                            <!-- 검색 결과가 여기에 표시됩니다 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Category Section -->
+    <section class="py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+                어떤 장소를 찾으시나요?
+            </h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="category-card" onclick="showPlaces('cafe')">
+                    <div class="category-icon">
+                        <i class="fas fa-coffee"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">카페</h3>
+                    <p class="text-gray-600">공부하기 좋은 카페</p>
+                </div>
+                
+                <div class="category-card" onclick="showPlaces('restaurant')">
+                    <div class="category-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">식당</h3>
+                    <p class="text-gray-600">맛있는 식사</p>
+                </div>
+                
+                <div class="category-card" onclick="showPlaces('culture')">
+                    <div class="category-icon">
+                        <i class="fas fa-theater-masks"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">문화시설</h3>
+                    <p class="text-gray-600">전시, 공연, 체험</p>
+                </div>
+                
+                <div class="category-card" onclick="showPlaces('shopping')">
+                    <div class="category-icon">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">쇼핑</h3>
+                    <p class="text-gray-600">필요한 물건 구매</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Places Section -->
+    <section class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+                인기 장소 추천
+            </h2>
+            
+            <div id="featured-places" class="max-w-4xl mx-auto">
+                <div class="loading-spinner" id="loading-spinner">
+                    <div class="spinner"></div>
+                    <p class="mt-4">추천 장소를 불러오는 중입니다...</p>
+                </div>
+                
+                <!-- Places will be dynamically loaded here -->
+                <div id="places-container"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+                왜 HYU양지:GO인가요?
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="stats-card">
+                    <div class="stats-number">AI</div>
+                    <h3 class="text-xl font-bold mb-2">AI 추천</h3>
+                    <p class="opacity-90">당신의 취향을 분석해서 최적의 장소를 추천해드립니다</p>
+                </div>
+                
+                <div class="stats-card">
+                    <div class="stats-number">87%</div>
+                    <h3 class="text-xl font-bold mb-2">데이터 품질</h3>
+                    <p class="opacity-90">자동으로 최신 정보를 검증하고 보강합니다</p>
+                </div>
+                
+                <div class="stats-card">
+                    <div class="stats-number">24/7</div>
+                    <h3 class="text-xl font-bold mb-2">실시간 업데이트</h3>
+                    <p class="opacity-90">항상 최신 정보를 제공합니다</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="container mx-auto px-4 text-center">
+            <h3 class="text-2xl font-bold mb-4">HYU양지:GO</h3>
+            <p class="opacity-75 mb-4">한양대학교 서울 캠퍼스의 모든 좋은 장소를</p>
+            <p class="opacity-75">AI로 추천하고 데이터 품질로 보장합니다</p>
+            
+            <div class="mt-8 flex justify-center gap-4">
+                <a href="#" class="hover:opacity-75 transition">서비스 소개</a>
+                <a href="#" class="hover:opacity-75 transition">데이터 정책</a>
+                <a href="#" class="hover:opacity-75 transition">문의하기</a>
+            </div>
+            
+            <div class="mt-8 opacity-50 text-sm">
+                © 2026 HYU양지:GO. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Quick Actions -->
+    <div class="flex justify-center gap-4 pb-20">
+        <a href="map.html" class="bg-white text-purple-600 px-8 py-4 rounded-full font-bold text-lg hover:scale-105 transition shadow-lg inline-flex items-center">
+            <i class="fas fa-map-marked-alt mr-2"></i>
+            지도로 보기
+        </a>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="floating-action" onclick="showDashboard()">
+        <i class="fas fa-chart-line"></i>
+    </div>
+
+    <!-- Dashboard Modal -->
+    <div id="dashboard-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeDashboard()">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 class="text-2xl font-bold mb-6">데이터 품질 대시보드</h2>
+            <iframe src="quality-dashboard.html" width="100%" height="600" frameborder="0"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // API 기본 URL
+        const API_BASE = 'http://localhost:3003';
+        
+        // 페이지 로드 시 추천 장소 불러오기
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFeaturedPlaces();
+        });
+        
+        // 추천 장소 불러오기
+        async function loadFeaturedPlaces() {
+            try {
+                const spinner = document.getElementById('loading-spinner');
+                const container = document.getElementById('places-container');
+                
+                spinner.style.display = 'block';
+                container.innerHTML = '';
+                
+                // API 호출 (현재는 테스트 데이터)
+                // const response = await fetch(`${API_BASE}/api/places`);
+                // const data = await response.json();
+                
+                // 테스트 데이터
+                const places = [
+                    {
+                        name: "스타벅스 한양대점",
+                        category: "cafe",
+                        address: "서울특별시 성동구 한양대학교길 25",
+                        quality_score: 0.92,
+                        description: "한양대학교 내에 위치한 대표적인 카페"
+                    },
+                    {
+                        name: "한양대 학생회관 식당",
+                        category: "restaurant", 
+                        address: "서울특별시 성동구 한양대학교길 1",
+                        quality_score: 0.88,
+                        description: "학생들을 위한 저렴하고 맛있는 식당"
+                    },
+                    {
+                        name: "한양대학교 박물관",
+                        category: "culture",
+                        address: "서울특별시 성동구 한양대학교길 94",
+                        quality_score: 0.95,
+                        description: "한양대학교의 박물관"
+                    }
+                ];
+                
+                // 장소 카드 생성
+                places.forEach(place => {
+                    const card = createPlaceCard(place);
+                    container.appendChild(card);
+                });
+                
+                spinner.style.display = 'none';
+                
+            } catch (error) {
+                console.error('Failed to load places:', error);
+                document.getElementById('loading-spinner').innerHTML = 
+                    '<p>장소를 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.</p>';
+            }
+        }
+        
+        // 장소 카드 생성
+        function createPlaceCard(place) {
+            const card = document.createElement('div');
+            card.className = 'place-card';
+            
+            const qualityClass = place.quality_score >= 0.8 ? 'quality-good' : 'quality-medium';
+            const qualityPercent = Math.round(place.quality_score * 100);
+            
+            card.innerHTML = `
+                <div class="place-header">
+                    <div>
+                        <div class="place-name">${place.name}</div>
+                        <div class="place-info">
+                            <i class="fas fa-map-marker-alt mr-2"></i>
+                            ${place.address}
+                        </div>
+                    </div>
+                    <div class="place-category">${getCategoryName(place.category)}</div>
+                </div>
+                <div class="place-description">${place.description}</div>
+                <div class="place-quality">
+                    <div class="quality-score">${qualityPercent}점</div>
+                    <i class="fas fa-star ${qualityClass}"></i>
+                    <span>데이터 품질 ${qualityClass === 'quality-good' ? '우수' : '보통'}</span>
+                </div>
+            `;
+            
+            card.onclick = () => showPlaceDetail(place);
+            
+            return card;
+        }
+        
+        // 카테고리 이름 변환
+        function getCategoryName(category) {
+            const names = {
+                'cafe': '카페',
+                'restaurant': '식당',
+                'culture': '문화시설',
+                'shopping': '쇼핑'
+            };
+            return names[category] || category;
+        }
+        
+        // 카테고리별 장소 보기
+        function showPlaces(category) {
+            console.log(`Show ${category} places`);
+            // TODO: 카테고리별 필터링 구현
+        }
+        
+        // 장소 상세 정보 보기
+        function showPlaceDetail(place) {
+            console.log('Show detail for:', place);
+            // TODO: 장소 상세 정보 모달 구현
+        }
+        
+        // 대시보드 모달 열기
+        function showDashboard() {
+            document.getElementById('dashboard-modal').style.display = 'flex';
+        }
+        
+        // 대시보드 모달 닫기
+        function closeDashboard() {
+            document.getElementById('dashboard-modal').style.display = 'none';
+        }
+        
+        // 모달 외부 클릭시 닫기
+        window.onclick = function(event) {
+            const modal = document.getElementById('dashboard-modal');
+            if (event.target === modal) {
+                closeDashboard();
+            }
+        }
+    </script>
+</body>
+</html>

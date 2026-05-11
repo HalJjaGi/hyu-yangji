@@ -1,0 +1,18 @@
+FROM nginx:alpine
+
+# Flutter 웹 앱 파일 복사
+COPY build/web/ /usr/share/nginx/html/
+
+# Nginx 설정 복사
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# 로그 디렉토리 생성
+RUN mkdir -p /var/log/nginx && \
+    touch /var/log/nginx/access.log /var/log/nginx/error.log && \
+    chmod 644 /var/log/nginx/*.log
+
+# 포트 설정
+EXPOSE 80
+
+# Nginx 실행
+CMD ["nginx", "-g", "daemon off;"]

@@ -1,0 +1,28 @@
+{
+  "name": "hyu_yangji",
+  "version": "1.0.0",
+  "description": "한양대 주변 지역을 중심으로 한 AI 기반 동선 추천 서비스입니다.",
+  "main": "healthcheck.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HalJjaGi/hyu-yangji.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/HalJjaGi/hyu-yangji/issues"
+  },
+  "homepage": "https://github.com/HalJjaGi/hyu-yangji#readme",
+  "dependencies": {
+    "playwright": "^1.59.1"
+  }
+}

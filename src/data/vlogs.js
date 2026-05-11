@@ -1,0 +1,87 @@
+// Vlog 데이터
+export const vlogData = [
+    {
+        id: 1,
+        title: '스타벅스 한양대점 방문 Vlog',
+        creator: '양지친구',
+        placeName: '스타벅스 한양대점',
+        thumbnail: 'https://picsum.photos/seed/vlog1/400/300.jpg',
+        duration: '2:15',
+        views: 1240,
+        likes: 89,
+        createdAt: '10분 전',
+        tags: ['카페', '스터디', '와이파이'],
+        videoUrl: '#',
+        description: '한양대학교 대표 카페인 스타벅스의 분위기를 담았어요! 공부하기 좋은 환경이에요.'
+    },
+    {
+        id: 2,
+        title: '한양대 도서관 하루종일 스터디',
+        creator: 'H양지',
+        placeName: '한양대 도서관',
+        thumbnail: 'https://picsum.photos/seed/vlog2/400/300.jpg',
+        duration: '3:42',
+        views: 890,
+        likes: 67,
+        createdAt: '1시간 전',
+        tags: ['스터디', '도서관', '24시간'],
+        videoUrl: '#',
+        description: '24시간 열람실에서의 하루! 조용한 환경에서 집중력 UP!'
+    },
+    {
+        id: 3,
+        title: '학생회관 점심 맛집 투어',
+        creator: '양지맛집',
+        placeName: '한양대 학생회관 식당',
+        thumbnail: 'https://picsum.photos/seed/vlog3/400/300.jpg',
+        duration: '1:58',
+        views: 2150,
+        likes: 156,
+        createdAt: '2시간 전',
+        tags: ['식당', '학생할인', '점심'],
+        videoUrl: '#',
+        description: '한양대학교에서 가장 맛있는 점심 메뉴들을 소개합니다! 가성비 최고!'
+    },
+    {
+        id: 4,
+        title: '한양대 박물관 전시 관람',
+        creator: '문화양지',
+        placeName: '한양대 박물관',
+        thumbnail: 'https://picsum.photos/seed/vlog4/400/300.jpg',
+        duration: '4:20',
+        views: 567,
+        likes: 43,
+        createdAt: '3시간 전',
+        tags: ['문화', '박물관', '전시'],
+        videoUrl: '#',
+        description: '한양대학교 박물관의 특별 전시를 구경했어요. 역사를 느낄 수 있는 시간이었어요.'
+    },
+    {
+        id: 5,
+        title: '커피스토리 아늑한 오후',
+        creator: '카페양지',
+        placeName: '커피스토리 한양대',
+        thumbnail: 'https://picsum.photos/seed/vlog5/400/300.jpg',
+        duration: '2:33',
+        views: 780,
+        likes: 92,
+        createdAt: '5시간 전',
+        tags: ['카페', '수제커피', '디저트'],
+        videoUrl: '#',
+        description: '아늑한 분위기에서 수제 커피와 디저트를 즐기는 오후, 추천해요!'
+    },
+    {
+        id: 6,
+        title: '체육관에서 땀 흘리기',
+        creator: '운동양지',
+        placeName: '한양대 체육관',
+        thumbnail: 'https://picsum.photos/seed/vlog6/400/300.jpg',
+        duration: '1:45',
+        views: 1340,
+        likes: 78,
+        createdAt: '6시간 전',
+        tags: ['운동', '체육관', '헬스'],
+        videoUrl: '#',
+        description: '한양대학교 체육관에서 다양한 운동을 즐기는 모습! 건강한 하루를 위해서!'
+    }
+];

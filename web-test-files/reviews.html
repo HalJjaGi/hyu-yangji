@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYU양지:GO - 코스 리뷰</title>
+    <meta name="description" content="성수동 데이트 코스 리뷰 및 후기">
+    
+    <!-- 모바일 최적화 -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 15px; 
+            text-align: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            font-size: 20px; 
+            margin-bottom: 5px; 
+        }
+        .header p { 
+            font-size: 14px; 
+            opacity: 0.9; 
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .course-summary {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .course-summary h2 {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .rating-summary {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .rating-score {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .rating-stars {
+            font-size: 24px;
+            color: #ffc107;
+        }
+        .rating-count {
+            color: #666;
+            font-size: 14px;
+        }
+        .write-review-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+        .write-review-btn:hover {
+            background: #5a67d8;
+        }
+        .review-form {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .review-form.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .star-rating {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .star {
+            font-size: 30px;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .star.active,
+        .star:hover {
+            color: #ffc107;
+        }
+        .form-group textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .submit-btn, .cancel-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .submit-btn {
+            background: #667eea;
+            color: white;
+        }
+        .cancel-btn {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+        .reviews-list {
+            margin-top: 20px;
+        }
+        .review-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .reviewer-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .review-rating {
+            color: #ffc107;
+            font-size: 18px;
+        }
+        .review-date {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .review-content {
+            color: #333;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        .back-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        /* 모바일 최적화 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            .course-summary h2 {
+                font-size: 20px;
+            }
+            .rating-score {
+                font-size: 28px;
+            }
+            .rating-stars {
+                font-size: 20px;
+            }
+            .star {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌿 HYU양지:GO</h1>
+        <p>성수동 데이트 코스 리뷰</p>
+    </div>
+    
+    <div class="container">
+        <div class="course-summary">
+            <h2>📍 성수동 감성 데이트</h2>
+            <div class="rating-summary">
+                <div class="rating-score">4.5</div>
+                <div>
+                    <div class="rating-stars">★★★★★</div>
+                    <div class="rating-count">23개 리뷰</div>
+                </div>
+            </div>
+            <p>🏷️ 예산: 30,000원 | ⏱️ 소요시간: 90분 | 📍 장소: 3곳</p>
+        </div>
+        
+        <button class="write-review-btn" onclick="toggleReviewForm()">
+            ✍️ 리뷰 작성하기
+        </button>
+        
+        <div class="review-form" id="reviewForm">
+            <h3>리뷰 작성</h3>
+            <form onsubmit="submitReview(event)">
+                <div class="form-group">
+                    <label>별점</label>
+                    <div class="star-rating" id="starRating">
+                        <span class="star" onclick="setRating(1)">★</span>
+                        <span class="star" onclick="setRating(2)">★</span>
+                        <span class="star" onclick="setRating(3)">★</span>
+                        <span class="star" onclick="setRating(4)">★</span>
+                        <span class="star" onclick="setRating(5)">★</span>
+                    </div>
+                    <input type="hidden" id="rating" name="rating" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reviewerName">닉네임</label>
+                    <input type="text" id="reviewerName" name="reviewerName" required placeholder="닉네임을 입력하세요">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reviewContent">리뷰 내용</label>
+                    <textarea id="reviewContent" name="reviewContent" required placeholder="이 코스에 대한 리뷰를 작성해주세요"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="toggleReviewForm()">취소</button>
+                    <button type="submit" class="submit-btn">리뷰 작성</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="reviews-list">
+            <h3>리뷰 목록</h3>
+            <div id="reviewsList">
+                <!-- 리뷰 목록이 여기에 표시됩니다 -->
+            </div>
+        </div>
+    </div>
+    
+    <button class="back-btn" onclick="goBack()">← 뒤로 가기</button>
+    
+    <script>
+        let currentRating = 0;
+        let reviews = [
+            {
+                id: 1,
+                name: "지원",
+                rating: 5,
+                content: "정말 최고의 데이트 코스였어요! 분위기도 좋고 가성비도 최고입니다.",
+                date: "2026-05-01"
+            },
+            {
+                id: 2,
+                name: "민진",
+                rating: 4,
+                content: "갤러리에서 감성적인 시간을 보내고 커피숍에서 여유롭게 이야기 나누기 좋았어요.",
+                date: "2026-04-28"
+            },
+            {
+                id: 3,
+                name: "준영",
+                rating: 5,
+                content: "예산 대비 만족도가 높은 코스입니다. 다음에도 이용하고 싶어요!",
+                date: "2026-04-25"
+            }
+        ];
+        
+        function toggleReviewForm() {
+            const form = document.getElementById('reviewForm');
+            form.classList.toggle('active');
+        }
+        
+        function setRating(rating) {
+            currentRating = rating;
+            document.getElementById('rating').value = rating;
+            updateStars();
+        }
+        
+        function updateStars() {
+            const stars = document.querySelectorAll('.star');
+            stars.forEach((star, index) => {
+                if (index < currentRating) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+        }
+        
+        function submitReview(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('reviewerName').value;
+            const content = document.getElementById('reviewContent').value;
+            const rating = parseInt(document.getElementById('rating').value);
+            
+            if (!name || !content || !rating) {
+                alert('모든 필드를 입력해주세요.');
+                return;
+            }
+            
+            const newReview = {
+                id: reviews.length + 1,
+                name: name,
+                rating: rating,
+                content: content,
+                date: new Date().toISOString().split('T')[0]
+            };
+            
+            reviews.unshift(newReview);
+            localStorage.setItem('reviews', JSON.stringify(reviews));
+            
+            renderReviews();
+            updateAverageRating();
+            
+            // 폼 초기화
+            document.getElementById('reviewerName').value = '';
+            document.getElementById('reviewContent').value = '';
+            document.getElementById('rating').value = '';
+            currentRating = 0;
+            updateStars();
+            toggleReviewForm();
+            
+            alert('리뷰가 작성되었습니다!');
+        }
+        
+        function renderReviews() {
+            const reviewsList = document.getElementById('reviewsList');
+            reviewsList.innerHTML = '';
+            
+            reviews.forEach(review => {
+                const reviewElement = document.createElement('div');
+                reviewElement.className = 'review-item';
+                reviewElement.innerHTML = `
+                    <div class="review-header">
+                        <span class="reviewer-name">${review.name}</span>
+                        <span class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</span>
+                    </div>
+                    <div class="review-date">${review.date}</div>
+                    <div class="review-content">${review.content}</div>
+                `;
+                reviewsList.appendChild(reviewElement);
+            });
+        }
+        
+        function updateAverageRating() {
+            const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+            const averageRating = reviews.length > 0 ? (totalRating / reviews.length).toFixed(1) : 0;
+            
+            document.querySelector('.rating-score').textContent = averageRating;
+            document.querySelector('.rating-count').textContent = `${reviews.length}개 리뷰`;
+        }
+        
+        function goBack() {
+            window.location.href = '/';
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 로컬스토리지에서 리뷰 불러오기
+            const savedReviews = localStorage.getItem('reviews');
+            if (savedReviews) {
+                reviews = JSON.parse(savedReviews);
+            }
+            
+            renderReviews();
+            updateAverageRating();
+        });
+    </script>
+</body>
+</html>

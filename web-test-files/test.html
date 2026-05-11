@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript 로딩 테스트</title>
+</head>
+<body>
+    <h1>JavaScript 로딩 테스트</h1>
+    <div id="test-result">테스트 대기 중...</div>
+    
+    <script>
+        console.log('기본 스크립트 로드됨');
+        document.getElementById('test-result').innerHTML = '✅ 기본 스크립트 정상';
+    </script>
+    
+    <script src="App.js"></script>
+    
+    <script>
+        setTimeout(() => {
+            const testResult = document.getElementById('test-result');
+            if (typeof app !== 'undefined') {
+                testResult.innerHTML += '<br>✅ App 클래스 정상 로드됨';
+            } else {
+                testResult.innerHTML += '<br>❌ App 클래스 로드 실패';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

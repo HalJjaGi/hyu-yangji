@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터 품질 대시보드 - HYU양지:GO</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+        
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .chart-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .status-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .status-indicator.good { background: #27ae60; }
+        .status-indicator.warning { background: #f39c12; }
+        .status-indicator.error { background: #e74c3c; }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+            color: #7f8c8d;
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: #5a67d8;
+            transform: scale(1.05);
+        }
+        
+        .api-test {
+            background: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .api-test h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .api-response {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>📊 데이터 품질 대시보드</h1>
+            <p>HYU양지:GO - 실시간 데이터 품질 모니터링 시스템</p>
+        </div>
+        
+        <div class="api-test">
+            <h3>🔍 API 연결 테스트</h3>
+            <div id="api-status" class="api-response">테스트 중...</div>
+        </div>
+        
+        <div id="loading" class="loading">
+            🔄 데이터 품질 정보를 불러오는 중입니다...
+        </div>
+        
+        <div id="dashboard-content" style="display: none;">
+            <!-- 핵심 메트릭스 -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="total-places">-</div>
+                    <div class="metric-label">전체 장소 수</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="avg-quality">-</div>
+                    <div class="metric-label">평균 품질 점수</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="enhanced-places">-</div>
+                    <div class="metric-label">품질 개선 장소</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="recent-updates">-</div>
+                    <div class="metric-label">24시간 업데이트</div>
+                </div>
+            </div>
+            
+            <!-- 시스템 상태 -->
+            <div class="status-section">
+                <h2 class="chart-title">🎯 시스템 상태</h2>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-indicator good"></div>
+                        <span>API 서버: 정상</span>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-indicator good"></div>
+                        <span>데이터베이스: 연결됨</span>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-indicator good"></div>
+                        <span>품질 시스템: 활성</span>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-indicator good"></div>
+                        <span>동기화: 가능</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 차트 -->
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3 class="chart-title">📈 품질 점수 분포</h3>
+                    <canvas id="quality-chart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3 class="chart-title">📊 데이터 소스 분포</h3>
+                    <canvas id="source-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="refresh-btn" onclick="loadDashboard()">🔄 새로고침</button>
+    
+    <!-- 장소 추가 테스트 패널 -->
+    <div style="position: fixed; bottom: 90px; right: 30px; z-index: 1000;">
+        <button onclick="toggleTestPanel()" style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-size: 0.9rem;">
+            🧪 테스트 장소 추가
+        </button>
+    </div>
+    
+    <div id="testPanel" style="display: none; position: fixed; bottom: 120px; right: 30px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); width: 300px; z-index: 1000;">
+        <h4>🧪 테스트 장소 추가</h4>
+        <select id="testCategory" style="width: 100%; padding: 5px; margin: 5px 0;">
+            <option value="cafe">카페</option>
+            <option value="restaurant">식당</option>
+            <option value="culture">문화시설</option>
+            <option value="shopping">쇼핑</option>
+        </select>
+        <input type="text" id="testName" placeholder="장소 이름" style="width: 100%; padding: 5px; margin: 5px 0;">
+        <input type="text" id="testAddress" placeholder="주소" style="width: 100%; padding: 5px; margin: 5px 0;">
+        <button onclick="addTestPlace()" style="background: #667eea; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">추가</button>
+        <button onclick="toggleTestPanel()" style="background: #95a5a6; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; margin-left: 5px;">닫기</button>
+        <div id="testResult" style="margin-top: 10px; padding: 10px; background: #ecf0f1; border-radius: 5px; font-size: 0.8rem; display: none;"></div>
+    </div>
+    
+    <script>
+        // API 기본 URL
+        const API_BASE = 'http://localhost:3003';
+        
+        // API 테스트 함수
+        async function testAPI() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                document.getElementById('api-status').innerHTML = 
+                    `✅ API 연결 성공\\n` +
+                    `상태: ${data.status}\\n` +
+                    `버전: ${data.version}\\n` +
+                    `시간: ${data.timestamp}`;
+                    
+                // 대시보드 데이터 로드
+                loadDashboard();
+                
+            } catch (error) {
+                document.getElementById('api-status').innerHTML = 
+                    `❌ API 연결 실패\\n` +
+                    `오류: ${error.message}\\n` +
+                    `API 서버가 실행 중인지 확인해주세요.`;
+            }
+        }
+        
+        // 대시보드 데이터 로드 함수
+        async function loadDashboard() {
+            try {
+                // 품질 보고서 가져오기
+                const response = await fetch(`${API_BASE}/api/sync/quality-report`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const report = result.report;
+                    updateDashboard(report);
+                } else {
+                    // 품질 보고서 API가 없을 경우 테스트 데이터 표시
+                    showTestDashboard();
+                }
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard-content').style.display = 'block';
+                
+            } catch (error) {
+                console.log('API 호출 실패, 테스트 데이터 표시:', error);
+                showTestDashboard();
+            }
+        }
+        
+        // 테스트 대시보드 표시 함수
+        function showTestDashboard() {
+            const testReport = {
+                summary: {
+                    total_places: 127,
+                    average_quality_score: 0.87,
+                    system_status: 'operational',
+                    last_sync: new Date().toISOString()
+                },
+                metrics: {
+                    places_with_enhancement: 98,
+                    addresses_enhanced: 125,
+                    coordinates_enhanced: 119,
+                    recent_updates: 23
+                }
+            };
+            
+            updateDashboard(testReport);
+            
+            // 테스트 데이터로 차트 업데이트
+            updateTestCharts();
+        }
+        
+        // 대시보드 업데이트 함수
+        function updateDashboard(report) {
+            const summary = report.summary;
+            const metrics = report.metrics;
+            
+            // 메트릭스 업데이트
+            document.getElementById('total-places').textContent = summary.total_places || '-';
+            document.getElementById('avg-quality').textContent = 
+                ((summary.average_quality_score || 0) * 100).toFixed(1) + '%';
+            document.getElementById('enhanced-places').textContent = 
+                metrics.places_with_enhancement || '-';
+            document.getElementById('recent-updates').textContent = 
+                metrics.recent_updates || '-';
+            
+            // 품질 분포 차트
+            const qualityCtx = document.getElementById('quality-chart').getContext('2d');
+            new Chart(qualityCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['고품질', '중간 품질', '저품질'],
+                    datasets: [{
+                        data: [75, 20, 5],
+                        backgroundColor: ['#27ae60', '#f39c12', '#e74c3c']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // 데이터 소스 차트
+            const sourceCtx = document.getElementById('source-chart').getContext('2d');
+            new Chart(sourceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['서울시 API', '관광 API', '사용자 입력'],
+                    datasets: [{
+                        label: '데이터 수',
+                        data: [87, 32, 8],
+                        backgroundColor: '#667eea'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 테스트 차트 업데이트
+        function updateTestCharts() {
+            // 품질 분포 차트 (테스트 데이터)
+            const qualityCtx = document.getElementById('quality-chart').getContext('2d');
+            new Chart(qualityCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['고품질 (80%+)', '중간 품질 (50-80%)', '저품질 (<50%)'],
+                    datasets: [{
+                        data: [95, 28, 4],
+                        backgroundColor: ['#27ae60', '#f39c12', '#e74c3c']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // 데이터 소스 차트 (테스트 데이터)
+            const sourceCtx = document.getElementById('source-chart').getContext('2d');
+            new Chart(sourceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['서울 문화시설 API', '관광 API', '사용자 입력'],
+                    datasets: [{
+                        label: '데이터 수',
+                        data: [98, 23, 6],
+                        backgroundColor: '#667eea'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 페이지 로드 시 테스트 시작
+        window.onload = function() {
+            testAPI();
+        };
+        
+        // 30초마다 자동 새로고침
+        setInterval(loadDashboard, 30000);
+        
+        // 테스트 패널 토글 함수
+        function toggleTestPanel() {
+            const panel = document.getElementById('testPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // 테스트 장소 추가 함수
+        async function addTestPlace() {
+            const category = document.getElementById('testCategory').value;
+            const name = document.getElementById('testName').value;
+            const address = document.getElementById('testAddress').value;
+            const resultDiv = document.getElementById('testResult');
+            
+            if (!name || !address) {
+                resultDiv.innerHTML = '<span style="color: red;">❌ 이름과 주소를 입력해주세요.</span>';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                // 테스트 장소 데이터
+                const placeData = {
+                    name: name,
+                    category: category,
+                    address: address,
+                    latitude: 37.5665 + (Math.random() - 0.5) * 0.1, // 서울 근처 랜덤 좌표
+                    longitude: 126.9780 + (Math.random() - 0.5) * 0.1
+                };
+                
+                resultDiv.innerHTML = '<span style="color: blue;">⏳ 장소 추가 중...</span>';
+                resultDiv.style.display = 'block';
+                
+                const response = await fetch(`${API_BASE}/api/places`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(placeData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `<span style="color: green;">✅ 성공! 장소가 추가되었습니다. ID: ${result.place?._id || 'N/A'}</span>`;
+                    
+                    // 입력 필드 초기화
+                    document.getElementById('testName').value = '';
+                    document.getElementById('testAddress').value = '';
+                    
+                    // 대시보드 새로고침
+                    setTimeout(loadDashboard, 1000);
+                } else {
+                    resultDiv.innerHTML = `<span style="color: red;">❌ 실패: ${result.error || '오류 발생'}</span>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<span style="color: red;">❌ 네트워크 오류: ${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

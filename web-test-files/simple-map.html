@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYU양지:GO - 지도</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .header { background: #667eea; color: white; padding: 20px; text-align: center; }
+        .map-container { position: relative; height: calc(100vh - 80px); }
+        #map { height: 100%; width: 100%; }
+        .info { position: absolute; top: 10px; left: 10px; z-index: 1000; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); max-width: 300px; }
+        .course-info { position: absolute; bottom: 10px; left: 10px; right: 10px; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 1000; }
+        .course-info h3 { color: #667eea; margin-bottom: 10px; }
+        .place-item { margin: 5px 0; padding: 5px; background: #f5f5f5; border-radius: 3px; }
+        .controls { position: absolute; top: 10px; right: 10px; z-index: 1000; }
+        .controls button { background: #667eea; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin: 2px; }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>🌿 HYU양지:GO - 모바일 지도</h1>
+        <p>성수동 데이트 코스 추천</p>
+    </div>
+    
+    <div class="map-container">
+        <div class="info">
+            <h3>📍 성수동 데이트 코스</h3>
+            <p>예산: 30,000원</p>
+            <p>소요시간: 90분</p>
+        </div>
+        
+        <div class="controls">
+            <button onclick="fitMap()">코스 전체 보기</button>
+            <button onclick="locateCurrentPosition()">현 위치</button>
+        </div>
+        
+        <div id="map"></div>
+        
+        <div class="course-info">
+            <h3>📋 코스 정보</h3>
+            <div class="place-item">
+                <strong>1️⃣ 성수동 갤러리</strong><br>
+                <small>미술관 | 0원 | 30분</small>
+            </div>
+            <div class="place-item">
+                <strong>2️⃣ 분식집</strong><br>
+                <small>한식 | 8,000원 | 30분</small>
+            </div>
+            <div class="place-item">
+                <strong>3️⃣ 커피숍</strong><br>
+                <small>카페 | 5,000원 | 30분</small>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 지도 초기화
+        const map = L.map('map').setView([37.5445, 127.0554], 15);
+        
+        // OpenStreetMap 타일
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // 코스 장소들
+        const places = [
+            {name: '성수동 갤러리', lat: 37.5445, lng: 127.0554, category: 'exhibition', color: '#9C27B0'},
+            {name: '분식집', lat: 37.5432, lng: 127.0543, category: 'restaurant', color: '#F44336'},
+            {name: '커피숍', lat: 37.5456, lng: 127.0567, category: 'cafe', color: '#795548'}
+        ];
+        
+        // 마커와 경로 추가
+        const markers = [];
+        const polylinePoints = [];
+        
+        places.forEach((place, index) => {
+            // 마커 추가
+            const marker = L.marker([place.lat, place.lng], {
+                icon: L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="
+                        background: ${place.color}; 
+                        color: white; 
+                        width: 30px; 
+                        height: 30px; 
+                        border-radius: 50%; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center; 
+                        font-weight: bold; 
+                        border: 2px solid white;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                    ">${index + 1}</div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                })
+            }).addTo(map);
+            
+            marker.bindPopup(`
+                <div style="text-align: center;">
+                    <h4 style="margin: 0 0 5px 0; color: ${place.color};">${place.name}</h4>
+                    <small>장소 ${index + 1}</small>
+                </div>
+            `);
+            
+            markers.push(marker);
+            polylinePoints.push([place.lat, place.lng]);
+        });
+        
+        // 경로 추가
+        const polyline = L.polyline(polylinePoints, {
+            color: '#667eea',
+            weight: 4,
+            opacity: 0.8,
+            dashArray: '10, 10'
+        }).addTo(map);
+        
+        // 코스 전체 보기
+        function fitMap() {
+            const group = new L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+        
+        // 현 위치로 이동
+        function locateCurrentPosition() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const userLocation = [position.coords.latitude, position.coords.longitude];
+                    map.setView(userLocation, 16);
+                    
+                    // 사용자 위치 마커
+                    L.marker(userLocation, {
+                        icon: L.divIcon({
+                            html: '<div style="background: #4CAF50; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white;"></div>',
+                            iconSize: [15, 15],
+                            iconAnchor: [7, 7]
+                        })
+                    }).addTo(map).bindPopup('현 위치');
+                });
+            } else {
+                alert('현 위치 기능을 지원하지 않습니다.');
+            }
+        }
+        
+        // 초기에 전체 코스 보기
+        setTimeout(fitMap, 1000);
+        
+        console.log('✅ 지도 로드 완료!');
+    </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+// 장소 데이터
+export const placesData = [
+    {
+        id: 1,
+        name: '스타벅스 한양대점',
+        category: 'cafe',
+        rating: 4.5,
+        quality_score: 92,
+        address: '서울특별시 성동구 한양대학교길 25',
+        description: '한양대학교 내에 위치한 대표적인 카페',
+        image: 'https://picsum.photos/seed/hyu-cafe1/400/300.jpg',
+        lat: 37.5559,
+        lng: 127.0465,
+        distance: 0.1,
+        tags: ['와이파이', '공부하기좋음', '24시간']
+    },
+    {
+        id: 2,
+        name: '한양대 학생회관 식당',
+        category: 'restaurant',
+        rating: 4.2,
+        quality_score: 88,
+        address: '서울특별시 성동구 한양대학교길 1',
+        description: '학생들을 위한 저렴하고 맛있는 식당',
+        image: 'https://picsum.photos/seed/hyu-restaurant1/400/300.jpg',
+        lat: 37.5560,
+        lng: 127.0466,
+        distance: 0.05,
+        tags: ['학생할인', '다양한메뉴', '단체석']
+    },
+    {
+        id: 3,
+        name: '한양대 박물관',
+        category: 'culture',
+        rating: 4.8,
+        quality_score: 95,
+        address: '서울특별시 성동구 한양대학교길 94',
+        description: '한양대학교의 박물관',
+        image: 'https://picsum.photos/seed/hyu-museum1/400/300.jpg',
+        lat: 37.5561,
+        lng: 127.0467,
+        distance: 0.2,
+        tags: ['무료입장', '역사전시', '교육적']
+    },
+    {
+        id: 4,
+        name: '한양대 도서관',
+        category: 'study',
+        rating: 4.7,
+        quality_score: 94,
+        address: '서울특별시 성동구 한양대학교길 55',
+        description: '24시간 열람이 가능한 대학 도서관',
+        image: 'https://picsum.photos/seed/hyu-library1/400/300.jpg',
+        lat: 37.5562,
+        lng: 127.0468,
+        distance: 0.15,
+        tags: ['24시간', '조용한', '자료풍부']
+    },
+    {
+        id: 5,
+        name: '커피스토리 한양대',
+        category: 'cafe',
+        rating: 4.3,
+        quality_score: 85,
+        address: '서울특별시 성동구 한양대학교길 30',
+        description: '아늑한 분위기의 수제 커피 전문점',
+        image: 'https://picsum.photos/seed/hyu-cafe2/400/300.jpg',
+        lat: 37.5563,
+        lng: 127.0469,
+        distance: 0.12,
+        tags: ['수제커피', '디저트', '아늑함']
+    },
+    {
+        id: 6,
+        name: '한양대 체육관',
+        category: 'culture',
+        rating: 4.1,
+        quality_score: 82,
+        address: '서울특별시 성동구 한양대학교길 70',
+        description: '다양한 스포츠 시설을 갖춘 체육관',
+        image: 'https://picsum.photos/seed/hyu-gym1/400/300.jpg',
+        lat: 37.5564,
+        lng: 127.0470,
+        distance: 0.18,
+        tags: ['운동시설', '샤워실', '수영장']
+    }
+];
